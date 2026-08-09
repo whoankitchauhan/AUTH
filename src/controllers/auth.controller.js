@@ -47,18 +47,23 @@ export async function register(req, res) {
   });
 }
 
-
 export async function getMe(req, res) {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 
-    const decoded = jwt.verify(token, config.JWT_SECRET);
+  const decoded = jwt.verify(token, config.JWT_SECRET);
 
-    console.log(decoded);
-    return res.status(200).json({ 
-      message: "User authenticated", 
-      userId: decoded.id
-     });
+  console.log(decoded);
+
+  const user = await userModel.findById(decoded.id);
+  res.status(200).json({
+    message: "User fetched successfully",
+    user: {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+    },
+  });
 }
