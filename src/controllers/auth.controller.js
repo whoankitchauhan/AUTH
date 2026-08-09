@@ -57,4 +57,8 @@ export async function getMe(req, res) {
     const decoded = jwt.verify(token, config.JWT_SECRET);
 
     console.log(decoded);
+    return res.status(200).json({ 
+      message: "User authenticated", 
+      userId: decoded.id
+     });
 }
