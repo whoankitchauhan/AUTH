@@ -26,15 +26,25 @@ export async function register(req, res) {
     password: hashedPassword,
   });
 
-  const token = jwt.sign(
+  const accessToken = jwt.sign(
     {
       id: user._id,
     },
     config.JWT_SECRET,
     {
-      expiresIn: "1h",
+      expiresIn: "15m",
     },
   );
+
+  const refreshToken = jwt.sign(
+    {
+      id: user._id,
+    },
+    config.JWT_SECRET,
+    {
+      expiresIn: "7d",
+    }
+  );  
 
   res.status(201).json({
     message: "User registered successfully",
@@ -43,7 +53,7 @@ export async function register(req, res) {
       username: user.username,
       email: user.email,
     },
-    token,
+    accessToken,
   });
 }
 
