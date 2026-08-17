@@ -42,13 +42,13 @@ export async function register(req, res) {
     .update(refreshToken)
     .digest("hex");
 
-    const session = await sessionModel.create({
-      userId: user._id,
-      refreshTokenHash,
-      ip: req.ip,
-      userAgent: req.headers["user-agent"],
-    });
-    
+  const session = await sessionModel.create({
+    userId: user._id,
+    refreshTokenHash,
+    ip: req.ip,
+    userAgent: req.headers["user-agent"],
+  });
+
   const accessToken = jwt.sign(
     {
       id: user._id,
@@ -100,10 +100,24 @@ export async function refreshToken(req, res) {
   const refreshToken = req.cookies.refreshToken;
 
   if (!refreshToken) {
-    return res.status(401).json({ message: "Unauthorized" });
+    return res.status(401).json({ message: "Refresh Token not found" });
   }
 
   const decoded = jwt.verify(refreshToken, config.JWT_SECRET);
+
+  const refreshTokenHash = crypto
+    .createHash("sha256")
+    .update(refreshToken)
+    .digest("hex");
+
+  const session = await sessionModel.findOne({
+    refreshTokenHash,
+    revoked: false,
+  });
+
+  if (!session) {
+    return res.status(401).json({ message: "Invalid Refresh Token" });
+  }
 
   const accessToken = jwt.sign(
     {
@@ -136,4 +150,29 @@ export async function refreshToken(req, res) {
     message: "Token refreshed successfully",
     accessToken,
   });
+}
+
+export async function logout(req, res) {
+  const refreshToken = req.cookies.refreshToken;
+
+  if (!refreshToken) {
+    return res.status(401).json({ message: "Refresh Token not found" });
+  }
+
+  const refreshTokenHash = crypto
+    .createHash("sha256")
+    .update(refreshToken)
+    .digest("hex");
+
+  const session = await sessionModel.findOne({
+    refreshTokenHash,
+    revoked: false,
+  });
+
+  if (!session) {
+    return res.status(401).json({ message: "Invalid Refresh Token" });
+  }
+
+  session.revoked = true;
+  await session.save();
 }
