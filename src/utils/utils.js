@@ -1,8 +1,8 @@
-function generateOtp() {
+export function generateOtp() {
     return Math.floor(100000 + Math.random() * 900000);
 }
 
-function OtpHTML(otp) {
+export function OtpHTML(otp) {
     return `
     <!DOCTYPE html>
     <html lang="en">
