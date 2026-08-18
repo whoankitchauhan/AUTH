@@ -276,7 +276,7 @@ export async function logoutAll(req, res) {
 
   await sessionModel.updateMany(
     {
-      user: decoded.id,
+      userId: decoded.id,
       revoked: false,
     },
     {
