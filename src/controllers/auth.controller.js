@@ -31,27 +31,32 @@ export async function register(req, res) {
   });
 
   const otp = generateOtp();
+
   const htmlContent = OtpHTML(otp);
-  const otpHash = crypto.createHash("sha256").update(otp).digest("hex");
+
+  const otpHash = crypto
+    .createHash("sha256")
+    .update(otp)
+    .digest("hex");
 
   await otpModel.create({
     email,
     userId: user._id,
     otp,
-    optHash: otpHash,
+    otpHash,
   });
 
-  await sendEmail({ email, subject: "Otp Verification", text: `Your OTP is ${otp}`, html: htmlContent});
+  await sendEmail({ email, subject: "Otp Verification", text: `Your OTP is ${otp}`, html: htmlContent });
 
-res.status(201).json({
-  message: "User registered successfully",
-  user: {
-    id: user._id,
-    username: user.username,
-    email: user.email,
-    verified: user.verified,
-  },
-});
+  res.status(201).json({
+    message: "User registered successfully",
+    user: {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      verified: user.verified,
+    },
+  });
 }
 
 export async function login(req, res) {
@@ -277,11 +282,14 @@ export async function logoutAll(req, res) {
 export async function verifyEmail(req, res) {
   const { email, otp } = req.body;
 
-  const otpHash = crypto.createHash("sha256").update(otp).digest("hex");
+  const otpHash = crypto
+    .createHash("sha256")
+    .update(String(otp))
+    .digest("hex");
 
-  const otpRecord = await otpModel.findOne({ 
-    email, 
-    otpHash: otpHash
+  const otpRecord = await otpModel.findOne({
+    email,
+    $or: [{ otpHash }, { optHash: otpHash }],
   });
 
   if (!otpRecord) {
@@ -290,10 +298,15 @@ export async function verifyEmail(req, res) {
     });
   }
 
-  const user = await userModel.findByIdAndUpdate(otpRecord.userId, { 
-    verified: true });
+  const user = await userModel.findByIdAndUpdate(
+    otpRecord.userId,
+    { verified: true },
+    { new: true }
+  );
 
-  await otpModel.deleteMany({ userId: user._id });
+  await otpModel.deleteMany({
+    userId: user._id,
+  });
 
   res.status(200).json({
     message: "Email verified successfully",
