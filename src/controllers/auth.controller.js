@@ -4,6 +4,8 @@ import config from "../config/config.js";
 import jwt from "jsonwebtoken";
 import sessionModel from "../models/session.model.js";
 import { sendEmail } from "../services/email.service.js";
+import { generateOTP, OtpHTML } from "../utils/otp.util.js";
+import otpModel from "../models/otp.model.js";
 
 export async function register(req, res) {
   const { username, email, password } = req.body;
@@ -28,17 +30,28 @@ export async function register(req, res) {
     password: hashedPassword,
   });
 
+  const otp = generateOTP();
+  const htmlContent = OtpHTML(otp);
+  const otpHash = crypto.createHash("sha256").update(otp).digest("hex");
 
-
-  res.status(201).json({
-    message: "User registered successfully",
-    user: {
-      id: user._id,
-      username: user.username,
-      email: user.email,
-      verified: user.verified,
-    },
+  await otpModel.create({
+    email,
+    userId: user._id,
+    otp,
+    optHash: otpHash,
   });
+
+  await sendEmail({ email, subject: "Otp Verification", text: `Your OTP is ${otp}`, html: htmlContent});
+
+res.status(201).json({
+  message: "User registered successfully",
+  user: {
+    id: user._id,
+    username: user.username,
+    email: user.email,
+    verified: user.verified,
+  },
+});
 }
 
 export async function login(req, res) {
