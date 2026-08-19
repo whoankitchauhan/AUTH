@@ -65,6 +65,12 @@ export async function login(req, res) {
     });
   }
 
+  if (!user.verified) {
+    return res.status(400).json({
+      message: "Please verify your email before logging in",
+    });
+  }
+
   const hashedPassword = crypto
     .createHash("sha256")
     .update(password)
@@ -265,5 +271,36 @@ export async function logoutAll(req, res) {
 
   res.status(200).json({
     message: "Logged Out from all Devices",
+  });
+}
+
+export async function verifyEmail(req, res) {
+  const { email, otp } = req.body;
+
+  const otpHash = crypto.createHash("sha256").update(otp).digest("hex");
+
+  const otpRecord = await otpModel.findOne({ 
+    email, 
+    otpHash 
+  });
+
+  if (!otpRecord) {
+    return res.status(400).json({
+      message: "Invalid OTP",
+    });
+  }
+
+  const user = await userModel.findByIdAndUpdate(otpRecord.userId, { 
+    verified: true });
+
+  await otpModel.deleteMany({ userId: user._id });
+
+  res.status(200).json({
+    message: "Email verified successfully",
+    user: {
+      id: user._id,
+      email: user.email,
+      verified: user.verified,
+    },
   });
 }
