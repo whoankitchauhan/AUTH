@@ -14,9 +14,12 @@ const otpSchema = new mongoose.Schema({
         type: String,
         required: [true, "Please provide an OTP"],
     },
-    optHash: {
+    otpHash: {
         type: String,
         required: [true, "Please provide an OTP hash"],
+    },
+    optHash: {
+        type: String,
     }
 }, {
     timestamps: true
